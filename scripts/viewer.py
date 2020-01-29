@@ -16,8 +16,8 @@ MQTT_PORT = CONFIG["mqtt"]["port"]
 MQTT_QOS = CONFIG["mqtt"]["QOS"]
 
 MQTT_TOPIC = CONFIG["save-captures"]["mqtt_topic"]
-
-VIEWER_WIDTH = 600
+MQTT_TOPIC2 = CONFIG["save-captures"]["mqtt_topic2"]
+VIEWER_WIDTH = 500
 
 
 def get_random_numpy():
@@ -26,6 +26,7 @@ def get_random_numpy():
 
 title = st.title(MQTT_TOPIC)
 viewer = st.image(get_random_numpy(), width=VIEWER_WIDTH)
+viewer2 = st.image(get_random_numpy(), width=VIEWER_WIDTH)
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
@@ -34,11 +35,17 @@ def on_connect(client, userdata, flags, rc):
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
-    if msg.topic != MQTT_TOPIC:
+    if msg.topic not in [MQTT_TOPIC, MQTT_TOPIC2]:
         return
-    image = byte_array_to_pil_image(msg.payload)
-    image = image.convert("RGB")
-    viewer.image(image, width=VIEWER_WIDTH)
+
+    if msg.topic == MQTT_TOPIC:
+        image = byte_array_to_pil_image(msg.payload)
+        image = image.convert("RGB")
+        viewer.image(image, width=VIEWER_WIDTH)
+    elif msg.topic == MQTT_TOPIC2:
+        image = byte_array_to_pil_image(msg.payload)
+        image = image.convert("RGB")
+        viewer2.image(image, width=VIEWER_WIDTH)
 
 
 def main():
@@ -46,6 +53,7 @@ def main():
     client.on_message = on_message
     client.connect(MQTT_BROKER, port=MQTT_PORT)
     client.subscribe(MQTT_TOPIC)
+    client.subscribe(MQTT_TOPIC2)
     time.sleep(4)  # Wait for connection setup to complete
     client.loop_forever()
 
